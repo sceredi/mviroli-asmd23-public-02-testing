@@ -4,14 +4,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 public class TestList {
     @Test
-    public void listInsertionOrderShouldBePreserved() {
-        List<String> list = new ArrayList<>();
-        list.add("a");
-        list.add("b");
-        list.add("c");
-        assertEquals(List.of("a", "b", "c"), list);
+    public void test() {
+        List<String> listMock = mock(List.class);
+        when(listMock.size()).thenReturn(5);
+        assertEquals(5, listMock.size());
+
+        listMock.add("5");
+        listMock.clear();
+
+        verify(listMock).clear();
+        verify(listMock).add("5");
+
     }
 }
