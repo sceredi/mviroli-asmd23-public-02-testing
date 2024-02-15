@@ -1,7 +1,7 @@
 package devices;
 
-public interface FailingStrategy {
+public interface FailingPolicy {
     boolean attemptOn();
     void reset();
-    String strategyName();
+    String policyName();
 }

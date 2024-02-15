@@ -3,16 +3,17 @@ package devices;
 import java.util.Objects;
 
 public class StandardDevice implements Device {
-    private FailingStrategy failingStrategy;
+    private FailingPolicy failingPolicy;
     private boolean on = false;
 
-    public StandardDevice(FailingStrategy failingStrategy) {
-        this.failingStrategy = Objects.requireNonNull(failingStrategy);
+    public StandardDevice(FailingPolicy failingPolicy) {
+        this.failingPolicy = Objects.requireNonNull(failingPolicy);
     }
+    //...
 
     @Override
     public void on() throws IllegalStateException {
-        if (!this.failingStrategy.attemptOn()){
+        if (!this.failingPolicy.attemptOn()){
             throw new IllegalStateException();
         }
         this.on = true;
@@ -31,13 +32,13 @@ public class StandardDevice implements Device {
     @Override
     public void reset() {
         this.off();
-        this.failingStrategy.reset();
+        this.failingPolicy.reset();
     }
 
     @Override
     public String toString() {
         return "StandardDevice{" +
-                "failingStrategy=" + failingStrategy.strategyName() +
+                "policy=" + failingPolicy.policyName() +
                 ", on=" + on +
                 '}';
     }

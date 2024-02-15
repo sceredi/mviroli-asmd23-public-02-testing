@@ -1,13 +1,16 @@
 package devices;
 
-import org.junit.jupiter.api.*;
-
 import java.util.stream.IntStream;
 
+import org.junit.jupiter.api.*;
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.mockito.Mockito;
 import static org.mockito.Mockito.*;
 
 public class StandardDeviceTest {
+
+    private Device device;
 
     @Test
     @DisplayName("Device must specify a strategy")
@@ -16,55 +19,59 @@ public class StandardDeviceTest {
     }
 
     @Nested
-    class TestOnDummy {
-
+    class ShowcaseDummies {
         @Test
         @DisplayName("Device is initially off")
         void testInitiallyOff() {
-            var dumbFailingStrategy = mock(FailingStrategy.class);
-            var device = new StandardDevice(dumbFailingStrategy);
+            // an unused reference, a sort of "empty implementation"
+            FailingPolicy dummyFailingPolicy = mock(FailingPolicy.class);
+            device = new StandardDevice(dummyFailingPolicy);
+            // checking that a device is on will not affect the strategy
             assertFalse(device.isOn());
         }
     }
 
     @Nested
-    class TestOnStubs {
-        private Device device;
-        private FailingStrategy stubFailingStrategy;
+    class ShowcaseStubs {
+        private FailingPolicy stubFailingPolicy;
 
         @BeforeEach
         void init(){
-            this.stubFailingStrategy = mock(FailingStrategy.class);
-            this.device = new StandardDevice(this.stubFailingStrategy);
+            this.stubFailingPolicy = mock(FailingPolicy.class);
+            device = new StandardDevice(this.stubFailingPolicy);
         }
 
         @Test
         @DisplayName("Device can be switched on")
         void testCanBeSwitchedOn() {
-            when(stubFailingStrategy.attemptOn()).thenReturn(true);
+            // stubbing the test double, indicating "default behaviour"
+            when(this.stubFailingPolicy.attemptOn()).thenReturn(true);
             device.on();
             assertTrue(device.isOn());
         }
 
         @Test
-        @DisplayName("Device won't switch off if failing")
+        @DisplayName("Device won't switch on if failing")
         void testWontSwitchOn() {
-            when(stubFailingStrategy.attemptOn()).thenReturn(false);
+            // multiple stubbing
+            when(this.stubFailingPolicy.attemptOn()).thenReturn(false);
+            when(this.stubFailingPolicy.policyName()).thenReturn("mock");
             assertThrows(IllegalStateException.class, () -> device.on());
+            assertEquals("StandardDevice{policy=mock, on=false}", device.toString());
         }
     }
 
     @Nested
-    class TestOnFakes {
-        private Device device;
-        private FailingStrategy fakeFailingStrategy;
+    class ShowcaseFakes {
+        private FailingPolicy fakeFailingPolicy;
 
         @BeforeEach
         void init(){
-            this.fakeFailingStrategy = mock(FailingStrategy.class);
-            this.device = new StandardDevice(this.fakeFailingStrategy);
-            when(fakeFailingStrategy.attemptOn()).thenReturn(true, true, false);
-            when(fakeFailingStrategy.strategyName()).thenReturn("mock");
+            this.fakeFailingPolicy = mock(FailingPolicy.class);
+            device = new StandardDevice(this.fakeFailingPolicy);
+            // faking is more than stubbing: this object pretends to be the real one
+            when(this.fakeFailingPolicy.attemptOn()).thenReturn(true, true, false);
+            when(this.fakeFailingPolicy.policyName()).thenReturn("mock");
         }
 
         @Test
@@ -78,90 +85,69 @@ public class StandardDeviceTest {
             });
             assertThrows(IllegalStateException.class, () -> device.on());
         }
-
-        @Test
-        @DisplayName("Device correctly produces a toString")
-        void testToString() {
-            assertEquals("StandardDevice{failingStrategy=mock, on=false}", device.toString());
-        }
-
     }
 
     @Nested
-    class TestOnSpy {
-        private Device device;
-        private FailingStrategy mockFailingStrategy;
+    class ShowcaseSpies {
+        private FailingPolicy spyFailingPolicy;
 
         @BeforeEach
         void init(){
-            this.mockFailingStrategy = spy(new FailingStrategy() {
-                @Override
-                public boolean attemptOn() {
-                    return true;
-                }
-
-                @Override
-                public void reset() {
-                }
-
-                @Override
-                public String strategyName() {
-                    return "trivial";
-                }
-            });
-            this.device = new StandardDevice(this.mockFailingStrategy);
-            when(mockFailingStrategy.attemptOn()).thenReturn(true, true, false);
-            when(mockFailingStrategy.strategyName()).thenReturn("mock");
+            // the spy is essentially a proxy to the DOC, used to capture events
+            this.spyFailingPolicy = spy(new RandomFailing());
+            device = new StandardDevice(this.spyFailingPolicy);
         }
 
         @Test
-        @DisplayName("Failing strategy is not called on off")
-        void testNotReset() {
-            this.device.off();
-            verifyNoInteractions(this.mockFailingStrategy);
-        }
-
-        @Test
-        @DisplayName("Resetting a device resets failing strategy")
+        @DisplayName("AttemptOn is called as expected")
         void testReset() {
-            this.device.isOn();
-            this.device.reset();
-            assertFalse(this.device.isOn());
-            verify(this.mockFailingStrategy).reset();
-            verify(this.mockFailingStrategy, times(1));
+            device.isOn();
+            // no interactions with the spy yet
+            verifyNoInteractions(this.spyFailingPolicy);
+            try{
+                device.on();
+            } catch (IllegalStateException e){}
+            // has attemptOn been called?
+            verify(this.spyFailingPolicy).attemptOn();
+            device.reset();
+            // have at least two method invocations be made?
+            assertEquals(2,
+                Mockito.mockingDetails(this.spyFailingPolicy).getInvocations().size());
+            //  Mockito.mockingDetails gives very powerful mechanisms...
         }
     }
-
 
     @Nested
-    class TestOnMocks {
-        private Device device;
-        private FailingStrategy mockFailingStrategy;
+    class ShowcaseMocks {
+        private FailingPolicy mockFailingPolicy;
 
         @BeforeEach
         void init(){
-            this.mockFailingStrategy = spy(mock(FailingStrategy.class));
-            this.device = new StandardDevice(this.mockFailingStrategy);
-            when(mockFailingStrategy.attemptOn()).thenReturn(true, true, false);
-            when(mockFailingStrategy.strategyName()).thenReturn("mock");
+            this.mockFailingPolicy = spy(mock(FailingPolicy.class));
+            device = new StandardDevice(this.mockFailingPolicy);
+            // the mock is a TD used to check you are collaborating as expected
+            when(mockFailingPolicy.attemptOn()).thenReturn(true, true, false);
+            when(mockFailingPolicy.policyName()).thenReturn("mock");
         }
 
         @Test
-        @DisplayName("Failing strategy is not called on off")
-        void testNotReset() {
-            this.device.off();
-            verifyNoInteractions(this.mockFailingStrategy);
-        }
+        @DisplayName("attemptOn is called as expected")
+        void testAttemptOn() {
+            verify(this.mockFailingPolicy, times(0)).attemptOn();
+            device.on();
+            verify(this.mockFailingPolicy, times(1)).attemptOn();
+            assertTrue(device.isOn());
 
-        @Test
-        @DisplayName("Resetting a device resets failing strategy")
-        void testReset() {
-            this.device.isOn();
-            this.device.reset();
-            assertFalse(this.device.isOn());
-            verify(this.mockFailingStrategy).reset();
-            verify(this.mockFailingStrategy, times(1));
+            device.off();
+            verify(this.mockFailingPolicy, times(1)).attemptOn();
+            device.on();
+            verify(this.mockFailingPolicy, times(2)).attemptOn();
+            assertTrue(device.isOn());
+
+            device.off();
+            verify(this.mockFailingPolicy, times(2)).attemptOn();
+            assertThrows(IllegalStateException.class, () -> device.on());
+            verify(this.mockFailingPolicy, times(3)).attemptOn();
         }
     }
-
 }
