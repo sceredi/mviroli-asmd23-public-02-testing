@@ -63,15 +63,14 @@ public class StandardDeviceTest {
 
     @Nested
     class ShowcaseFakes {
-        private FailingPolicy fakeFailingPolicy;
 
         @BeforeEach
         void init(){
-            this.fakeFailingPolicy = mock(FailingPolicy.class);
-            device = new StandardDevice(this.fakeFailingPolicy);
+            FailingPolicy fakeFailingPolicy = mock(FailingPolicy.class);
+            device = new StandardDevice(fakeFailingPolicy);
             // faking is more than stubbing: this object pretends to be the real one
-            when(this.fakeFailingPolicy.attemptOn()).thenReturn(true, true, false);
-            when(this.fakeFailingPolicy.policyName()).thenReturn("mock");
+            when(fakeFailingPolicy.attemptOn()).thenReturn(true, true, false);
+            when(fakeFailingPolicy.policyName()).thenReturn("mock");
         }
 
         @Test
@@ -106,7 +105,7 @@ public class StandardDeviceTest {
             verifyNoInteractions(this.spyFailingPolicy);
             try{
                 device.on();
-            } catch (IllegalStateException e){}
+            } catch (IllegalStateException ignored){}
             // has attemptOn been called?
             verify(this.spyFailingPolicy).attemptOn();
             device.reset();

@@ -133,3 +133,6 @@ project/plugins/project/
 .bsp/
 
 # End of https://www.toptal.com/developers/gitignore/api/java,sbt,intellij+all
+.bloop/
+.metals/
+project/
