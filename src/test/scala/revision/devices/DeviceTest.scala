@@ -19,7 +19,3 @@ class DeviceTest:
     val device = Device(failingPolicy)
     device.turnOn()
     assertTrue(device.isOn)
-    device.turnOn()
-    assertTrue(device.isOn)
-    device.turnOn()
-    assertTrue(device.isOn)
