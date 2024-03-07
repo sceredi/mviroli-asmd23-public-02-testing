@@ -19,6 +19,7 @@ object Device:
 
     override def turnOn(): Unit =
       if !failingPolicy.attemptOn() then
+        on = false
         throw IllegalStateException("FailingPolicy disallows turning on")
       else on = true
 

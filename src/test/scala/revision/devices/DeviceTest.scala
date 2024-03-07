@@ -19,3 +19,19 @@ class DeviceTest:
     val device = Device(failingPolicy)
     device.turnOn()
     assertTrue(device.isOn)
+
+  @Test def aDeviceShouldNotTurnOnIfTheFailingPolicyDisallowsIt(): Unit =
+    val failingPolicy: FailingPolicy = mock(classOf[FailingPolicy])
+    when(failingPolicy.attemptOn()).thenReturn(false)
+    val device = Device(failingPolicy)
+    assertThrows(classOf[IllegalStateException], () => device.turnOn())
+    assertFalse(device.isOn)
+
+  @Test def aDeviceFollowsThePolicyWhenTurningOn(): Unit =
+    val failingPolicy: FailingPolicy = mock(classOf[FailingPolicy])
+    when(failingPolicy.attemptOn()).thenReturn(true, false)
+    val device = Device(failingPolicy)
+    device.turnOn()
+    assertTrue(device.isOn)
+    assertThrows(classOf[IllegalStateException], () => device.turnOn())
+    assertFalse(device.isOn)
